@@ -276,7 +276,7 @@ export class WxKeyService {
       const keyBuffer = Buffer.alloc(65)
       if (PollKeyData(keyBuffer, 65)) {
         const key = keyBuffer.toString('utf8').replace(/\0/g, '').trim()
-        console.log('轮询到密钥:', key, '长度:', key.length)
+        
         if (key && this.onKeyReceived) {
           this.onKeyReceived(key)
         }

@@ -2088,6 +2088,20 @@ function registerIpcHandlers() {
     }
   })
 
+  // 读取 AI 服务使用指南
+  ipcMain.handle('ai:readGuide', async (_, guideName: string) => {
+    try {
+      const guidePath = join(__dirname, '../electron/services/ai', guideName)
+      if (!existsSync(guidePath)) {
+        return { success: false, error: '指南文件不存在' }
+      }
+      const content = readFileSync(guidePath, 'utf-8')
+      return { success: true, content }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
+  })
+
   ipcMain.handle('ai:generateSummary', async (event, sessionId: string, timeRange: number, options: {
     provider: string
     apiKey: string

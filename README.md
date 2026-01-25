@@ -7,7 +7,7 @@
 **一款现代化的微信聊天记录查看与分析工具**
 
 [![License](https://img.shields.io/badge/license-CC--BY--NC--SA--4.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.1.2-green.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-2.1.3-green.svg)](package.json)
 [![Platform](https://img.shields.io/badge/platform-Windows-0078D6.svg?logo=windows)]()
 [![Electron](https://img.shields.io/badge/Electron-39-47848F.svg?logo=electron)]()
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react)]()
@@ -296,6 +296,7 @@ export const useChatStore = create<ChatStore>((set) => ({
 
 | 渠道 | 链接 |
 |:---:|:---|
+| 🌐 **官方网站** | [密语 CipherTalk](https://miyuapp.aiqji.com) |
 | 🐛 **问题反馈** | [GitHub Issues](https://github.com/ILoveBingLu/CipherTalk/issues) |
 | 💬 **讨论交流** | [GitHub Discussions](https://github.com/ILoveBingLu/CipherTalk/discussions) |
 | 📱 **Telegram 群组** | [加入群聊](https://t.me/+toZ7bY15IZo3NjVl) |
@@ -310,7 +311,7 @@ export const useChatStore = create<ChatStore>((set) => ({
 感谢所有为开源社区做出贡献的开发者们！
 
 特别感谢：
-- **[WeFlow](https://github.com/ILoveBingLu/WeFlow)** - 提供了部分功能参考
+- **[WeFlow](https://github.com/hicccc77/WeFlow)** - 提供了部分功能参考
 - **所有贡献者** - 感谢每一位为本项目做出贡献的开发者
 
 ---

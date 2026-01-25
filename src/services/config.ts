@@ -231,14 +231,14 @@ export async function setAiProvider(provider: string): Promise<void> {
 }
 
 // 获取指定提供商的配置
-export async function getAiProviderConfig(providerId: string): Promise<{ apiKey: string; model: string } | null> {
+export async function getAiProviderConfig(providerId: string): Promise<{ apiKey: string; model: string; baseURL?: string } | null> {
   const configs = await config.get('aiProviderConfigs')
   const allConfigs = (configs as any) || {}
   return allConfigs[providerId] || null
 }
 
 // 设置指定提供商的配置
-export async function setAiProviderConfig(providerId: string, providerConfig: { apiKey: string; model: string }): Promise<void> {
+export async function setAiProviderConfig(providerId: string, providerConfig: { apiKey: string; model: string; baseURL?: string }): Promise<void> {
   const configs = await config.get('aiProviderConfigs')
   const allConfigs = (configs as any) || {}
   allConfigs[providerId] = providerConfig
@@ -246,7 +246,7 @@ export async function setAiProviderConfig(providerId: string, providerConfig: { 
 }
 
 // 获取所有提供商的配置
-export async function getAllAiProviderConfigs(): Promise<{ [providerId: string]: { apiKey: string; model: string } }> {
+export async function getAllAiProviderConfigs(): Promise<{ [providerId: string]: { apiKey: string; model: string; baseURL?: string } }> {
   const value = await config.get('aiProviderConfigs')
   return (value as any) || {}
 }

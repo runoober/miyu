@@ -9,6 +9,8 @@ import { SiliconFlowProvider, SiliconFlowMetadata } from './providers/siliconflo
 import { XiaomiProvider, XiaomiMetadata } from './providers/xiaomi'
 import { OpenAIProvider, OpenAIMetadata } from './providers/openai'
 import { GeminiProvider, GeminiMetadata } from './providers/gemini'
+import { OllamaProvider, OllamaMetadata } from './providers/ollama'
+import { CustomProvider, CustomMetadata } from './providers/custom'
 import { AIProvider } from './providers/base'
 import type { Message, Contact } from '../chatService'
 import { voiceTranscribeService } from '../voiceTranscribeService'
@@ -81,6 +83,8 @@ class AIService {
    */
   getAllProviders() {
     return [
+      CustomMetadata,
+      OllamaMetadata,
       OpenAIMetadata,
       GeminiMetadata,
       DeepSeekMetadata,
@@ -111,6 +115,19 @@ class AIService {
     }
 
     switch (name) {
+      case 'custom':
+        // 自定义服务必须提供 baseURL
+        const customConfig = this.configService.getAIProviderConfig('custom')
+        const customBaseURL = customConfig?.baseURL
+        if (!customBaseURL) {
+          throw new Error('自定义服务需要配置服务地址')
+        }
+        return new CustomProvider(key || '', customBaseURL)
+      case 'ollama':
+        // Ollama 支持自定义 baseURL
+        const ollamaConfig = this.configService.getAIProviderConfig('ollama')
+        const baseURL = ollamaConfig?.baseURL || 'http://localhost:11434/v1'
+        return new OllamaProvider(key || 'ollama', baseURL)
       case 'openai':
         return new OpenAIProvider(key)
       case 'gemini':

@@ -553,6 +553,11 @@ export interface ElectronAPI {
       success: boolean
       error?: string
     }>
+    readGuide: (guideName: string) => Promise<{
+      success: boolean
+      content?: string
+      error?: string
+    }>
     generateSummary: (sessionId: string, timeRange: number, options: {
       provider: string
       apiKey: string

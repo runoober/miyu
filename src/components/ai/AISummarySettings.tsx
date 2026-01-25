@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, Sparkles, Check, ChevronDown, ChevronUp, Zap, Star, FileText } from 'lucide-react'
+import { Eye, EyeOff, Sparkles, Check, ChevronDown, ChevronUp, Zap, Star, FileText, HelpCircle, X } from 'lucide-react'
 import { getAIProviders, type AIProviderInfo } from '../../types/ai'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import './AISummarySettings.scss'
 
 interface CustomSelectProps {
@@ -125,7 +127,13 @@ function AISummarySettings({
   const [isTesting, setIsTesting] = useState(false)
   const [usageStats, setUsageStats] = useState<any>(null)
   const [providers, setProviders] = useState<AIProviderInfo[]>([])
-  const [providerConfigs, setProviderConfigs] = useState<{ [key: string]: { apiKey: string; model: string } }>({})
+  const [providerConfigs, setProviderConfigs] = useState<{ [key: string]: { apiKey: string; model: string; baseURL?: string } }>({})
+  const [baseURL, setBaseURL] = useState('')
+  const [showOllamaHelp, setShowOllamaHelp] = useState(false)
+  const [showCustomHelp, setShowCustomHelp] = useState(false)
+  const [ollamaGuideContent, setOllamaGuideContent] = useState('')
+  const [customGuideContent, setCustomGuideContent] = useState('')
+  const [isLoadingGuide, setIsLoadingGuide] = useState(false)
 
   useEffect(() => {
     // 加载提供商列表和统计数据
@@ -133,6 +141,37 @@ function AISummarySettings({
     loadUsageStats()
     loadAllProviderConfigs()
   }, [])
+
+  // 当 provider 改变时，加载对应的 baseURL
+  useEffect(() => {
+    const loadBaseURL = async () => {
+      if (provider === 'ollama' || provider === 'custom') {
+        const { getAiProviderConfig } = await import('../../services/config')
+        const config = await getAiProviderConfig(provider)
+        if (provider === 'ollama') {
+          setBaseURL(config?.baseURL || 'http://localhost:11434/v1')
+        } else if (provider === 'custom') {
+          setBaseURL(config?.baseURL || '')
+        }
+      } else {
+        setBaseURL('')
+      }
+    }
+    loadBaseURL()
+  }, [provider])
+
+  // 当 baseURL 改变时，自动保存（仅针对 Ollama 和 Custom）
+  useEffect(() => {
+    const saveBaseURL = async () => {
+      if ((provider === 'ollama' || provider === 'custom') && baseURL) {
+        const { setAiProviderConfig } = await import('../../services/config')
+        await setAiProviderConfig(provider, { apiKey, model, baseURL })
+      }
+    }
+    // 延迟保存，避免初始化时触发
+    const timer = setTimeout(saveBaseURL, 500)
+    return () => clearTimeout(timer)
+  }, [baseURL, provider, apiKey, model])
 
   const loadProviders = async () => {
     try {
@@ -155,12 +194,12 @@ function AISummarySettings({
 
   const handleProviderChange = async (newProvider: string) => {
     // 先保存当前提供商的配置
-    if (provider && (apiKey || model)) {
+    if (provider && (apiKey || model || baseURL)) {
       const { setAiProviderConfig } = await import('../../services/config')
-      await setAiProviderConfig(provider, { apiKey, model })
+      await setAiProviderConfig(provider, { apiKey, model, baseURL: baseURL || undefined })
       setProviderConfigs(prev => ({
         ...prev,
-        [provider]: { apiKey, model }
+        [provider]: { apiKey, model, baseURL: baseURL || undefined }
       }))
     }
 
@@ -175,10 +214,19 @@ function AISummarySettings({
       // 使用已保存的配置
       setApiKey(savedConfig.apiKey)
       setModel(savedConfig.model)
+      setBaseURL(savedConfig.baseURL || '')
     } else if (newProviderData) {
       // 使用默认配置
       setApiKey('')
       setModel(newProviderData.models[0])
+      // Ollama 和 Custom 的默认 baseURL
+      if (newProvider === 'ollama') {
+        setBaseURL('http://localhost:11434/v1')
+      } else if (newProvider === 'custom') {
+        setBaseURL('')
+      } else {
+        setBaseURL('')
+      }
     }
   }
 
@@ -223,6 +271,45 @@ function AISummarySettings({
     } finally {
       setIsTesting(false)
     }
+  }
+
+  // 加载使用指南
+  const loadGuide = async (guideName: string) => {
+    setIsLoadingGuide(true)
+    try {
+      const result = await window.electronAPI.ai.readGuide(guideName)
+      if (result.success && result.content) {
+        const html = await marked.parse(result.content)
+        const sanitized = DOMPurify.sanitize(html)
+        return sanitized
+      } else {
+        console.error('加载指南失败:', result.error)
+        return '<p>加载指南失败</p>'
+      }
+    } catch (e) {
+      console.error('加载指南异常:', e)
+      return '<p>加载指南失败</p>'
+    } finally {
+      setIsLoadingGuide(false)
+    }
+  }
+
+  // 打开 Ollama 帮助
+  const handleOpenOllamaHelp = async () => {
+    if (!ollamaGuideContent) {
+      const content = await loadGuide('Ollama使用指南.md')
+      setOllamaGuideContent(content)
+    }
+    setShowOllamaHelp(true)
+  }
+
+  // 打开自定义服务帮助
+  const handleOpenCustomHelp = async () => {
+    if (!customGuideContent) {
+      const content = await loadGuide('自定义AI服务使用指南.md')
+      setCustomGuideContent(content)
+    }
+    setShowCustomHelp(true)
   }
 
   const currentProvider = providers.find(p => p.id === provider) || providers[0]
@@ -272,7 +359,13 @@ function AISummarySettings({
           <div className="input-with-actions">
             <input
               type={showApiKey ? 'text' : 'password'}
-              placeholder={`请输入 ${currentProvider?.displayName} API 密钥`}
+              placeholder={
+                provider === 'ollama' 
+                  ? '本地服务无需密钥（可选）' 
+                  : provider === 'custom'
+                  ? '请输入自定义服务的 API 密钥'
+                  : `请输入 ${currentProvider?.displayName} API 密钥`
+              }
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               className="api-key-input"
@@ -289,13 +382,68 @@ function AISummarySettings({
               type="button"
               className="input-action-btn primary"
               onClick={handleTestConnection}
-              disabled={isTesting || !apiKey}
+              disabled={isTesting || (provider !== 'ollama' && !apiKey) || (provider === 'custom' && !baseURL)}
               title="测试连接"
             >
               {isTesting ? <Sparkles size={16} className="spin" /> : <Sparkles size={16} />}
             </button>
           </div>
         </div>
+
+        {/* Ollama 专用：baseURL 配置 */}
+        {provider === 'ollama' && (
+          <div className="form-group">
+            <label className="label-with-help">
+              <span>服务地址</span>
+              <button
+                type="button"
+                className="help-icon-btn"
+                onClick={handleOpenOllamaHelp}
+                title="查看 Ollama 使用指南"
+              >
+                <HelpCircle size={16} />
+              </button>
+            </label>
+            <input
+              type="text"
+              placeholder="http://localhost:11434/v1"
+              value={baseURL}
+              onChange={(e) => setBaseURL(e.target.value)}
+              className="api-key-input"
+            />
+            <div className="form-hint">
+              Ollama 默认运行在 http://localhost:11434，如果修改了端口或使用远程服务，请在此配置
+            </div>
+          </div>
+        )}
+
+        {/* Custom 专用：baseURL 配置 */}
+        {provider === 'custom' && (
+          <div className="form-group">
+            <label className="label-with-help">
+              <span>服务地址 *</span>
+              <button
+                type="button"
+                className="help-icon-btn"
+                onClick={handleOpenCustomHelp}
+                title="查看自定义服务使用指南"
+              >
+                <HelpCircle size={16} />
+              </button>
+            </label>
+            <input
+              type="text"
+              placeholder="https://api.example.com/v1"
+              value={baseURL}
+              onChange={(e) => setBaseURL(e.target.value)}
+              className="api-key-input"
+              required
+            />
+            <div className="form-hint">
+              请输入 OpenAI 兼容的 API 地址（需包含 /v1），例如：OneAPI、API2D、自建中转等
+            </div>
+          </div>
+        )}
 
         <div className="form-row">
           <div className="form-group">
@@ -397,6 +545,42 @@ function AISummarySettings({
       <div className="info-box-simple">
         <p>💡 提示：API 密钥存储在本地，不会上传到任何服务器。摘要内容仅用于本地展示。</p>
       </div>
+
+      {/* Ollama 使用指南弹窗 */}
+      {showOllamaHelp && (
+        <div className="ollama-help-modal" onClick={() => setShowOllamaHelp(false)}>
+          <div className="ollama-help-content" onClick={(e) => e.stopPropagation()}>
+            <div className="ollama-help-header">
+              <h2>Ollama 本地 AI 使用指南</h2>
+              <button className="close-btn" onClick={() => setShowOllamaHelp(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div 
+              className="ollama-help-body markdown-content"
+              dangerouslySetInnerHTML={{ __html: ollamaGuideContent || '<p>加载中...</p>' }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 自定义服务使用指南弹窗 */}
+      {showCustomHelp && (
+        <div className="ollama-help-modal" onClick={() => setShowCustomHelp(false)}>
+          <div className="ollama-help-content" onClick={(e) => e.stopPropagation()}>
+            <div className="ollama-help-header">
+              <h2>自定义 AI 服务使用指南</h2>
+              <button className="close-btn" onClick={() => setShowCustomHelp(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div 
+              className="ollama-help-body markdown-content"
+              dangerouslySetInnerHTML={{ __html: customGuideContent || '<p>加载中...</p>' }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

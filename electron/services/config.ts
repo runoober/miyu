@@ -287,18 +287,18 @@ export class ConfigService {
     this.set('aiCurrentProvider', provider)
   }
 
-  getAIProviderConfig(providerId: string): { apiKey: string; model: string } | null {
+  getAIProviderConfig(providerId: string): { apiKey: string; model: string; baseURL?: string } | null {
     const configs = this.get('aiProviderConfigs')
     return configs[providerId] || null
   }
 
-  setAIProviderConfig(providerId: string, config: { apiKey: string; model: string }): void {
+  setAIProviderConfig(providerId: string, config: { apiKey: string; model: string; baseURL?: string }): void {
     const configs = this.get('aiProviderConfigs')
     configs[providerId] = config
     this.set('aiProviderConfigs', configs)
   }
 
-  getAllAIProviderConfigs(): { [providerId: string]: { apiKey: string; model: string } } {
+  getAllAIProviderConfigs(): { [providerId: string]: { apiKey: string; model: string; baseURL?: string } } {
     return this.get('aiProviderConfigs')
   }
 }
