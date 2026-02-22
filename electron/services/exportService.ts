@@ -92,7 +92,6 @@ export interface ExportOptions {
   exportVideos?: boolean
   exportEmojis?: boolean
   exportVoices?: boolean
-  exportFiles?: boolean
   mediaPathMap?: Map<number, string>
 }
 
@@ -594,12 +593,7 @@ class ExportService {
           return '[转账]'
         }
 
-        if (type === '6') {
-          if (mediaPathMap && createTime && mediaPathMap.has(createTime)) {
-            return `[文件] ${mediaPathMap.get(createTime)} ${title || ''}`
-          }
-          return title ? `[文件] ${title}` : '[文件]'
-        }
+        if (type === '6') return title ? `[文件] ${title}` : '[文件]'
         if (type === '19') return title ? `[聊天记录] ${title}` : '[聊天记录]'
         if (type === '33' || type === '36') return title ? `[小程序] ${title}` : '[小程序]'
         if (type === '57') return title || '[引用消息]'
@@ -638,12 +632,7 @@ class ExportService {
           }
 
           // 其他类型
-          if (xmlType === '6') {
-            if (mediaPathMap && createTime && mediaPathMap.has(createTime)) {
-              return `[文件] ${mediaPathMap.get(createTime)} ${title || ''}`
-            }
-            return title ? `[文件] ${title}` : '[文件]'
-          }
+          if (xmlType === '6') return title ? `[文件] ${title}` : '[文件]'
           if (xmlType === '19') return title ? `[聊天记录] ${title}` : '[聊天记录]'
           if (xmlType === '33' || xmlType === '36') return title ? `[小程序] ${title}` : '[小程序]'
           if (xmlType === '57') return title || '[引用消息]'
@@ -2168,7 +2157,7 @@ class ExportService {
         else if (options.format === 'html') ext = '.html'
 
         // 当导出媒体时，创建会话子文件夹，把文件和媒体都放进去
-        const hasMedia = options.exportImages || options.exportVideos || options.exportEmojis || options.exportVoices || options.exportFiles
+        const hasMedia = options.exportImages || options.exportVideos || options.exportEmojis || options.exportVoices
         const sessionOutputDir = hasMedia ? path.join(outputDir, safeName) : outputDir
         if (hasMedia && !fs.existsSync(sessionOutputDir)) {
           fs.mkdirSync(sessionOutputDir, { recursive: true })
@@ -2257,7 +2246,6 @@ class ExportService {
     const imageOutDir = options.exportImages ? path.join(outputDir, 'images') : ''
     const videoOutDir = options.exportVideos ? path.join(outputDir, 'videos') : ''
     const emojiOutDir = options.exportEmojis ? path.join(outputDir, 'emojis') : ''
-    const fileOutDir = options.exportFiles ? path.join(outputDir, 'files') : ''
 
     if (options.exportImages && !fs.existsSync(imageOutDir)) {
       fs.mkdirSync(imageOutDir, { recursive: true })
@@ -2268,14 +2256,10 @@ class ExportService {
     if (options.exportEmojis && !fs.existsSync(emojiOutDir)) {
       fs.mkdirSync(emojiOutDir, { recursive: true })
     }
-    if (options.exportFiles && !fs.existsSync(fileOutDir)) {
-      fs.mkdirSync(fileOutDir, { recursive: true })
-    }
 
     let imageCount = 0
     let videoCount = 0
     let emojiCount = 0
-    let fileCount = 0
     let emojiTotal = 0
     let emojiProcessed = 0
 
@@ -2357,12 +2341,14 @@ class ExportService {
                     if (fs.existsSync(filePath)) {
                       const ext = path.extname(filePath) || '.jpg'
                       const fileName = `${createTime}_${imageMd5 || imageDatName}${ext}`
-                      const destPath = path.join(imageOutDir, fileName)
+                      const df = this.dateFolder(createTime)
+                      const dayDir = path.join(imageOutDir, df)
+                      if (!fs.existsSync(dayDir)) fs.mkdirSync(dayDir, { recursive: true })
+                      const destPath = path.join(dayDir, fileName)
                       if (!fs.existsSync(destPath)) {
                         fs.copyFileSync(filePath, destPath)
                         imageCount++
-                        // 记录映射：createTime → 相对路径
-                        mediaPathMap.set(createTime, `images/${fileName}`)
+                        mediaPathMap.set(createTime, `images/${df}/${fileName}`)
                       }
                     }
                   }
@@ -2382,12 +2368,14 @@ class ExportService {
                     const videoPath = videoInfo.videoUrl.replace(/^file:\/\/\//i, '').replace(/\//g, path.sep)
                     if (fs.existsSync(videoPath)) {
                       const fileName = `${createTime}_${videoMd5}.mp4`
-                      const destPath = path.join(videoOutDir, fileName)
+                      const df = this.dateFolder(createTime)
+                      const dayDir = path.join(videoOutDir, df)
+                      if (!fs.existsSync(dayDir)) fs.mkdirSync(dayDir, { recursive: true })
+                      const destPath = path.join(dayDir, fileName)
                       if (!fs.existsSync(destPath)) {
                         fs.copyFileSync(videoPath, destPath)
                         videoCount++
-                        // 记录映射：createTime → 相对路径
-                        mediaPathMap.set(createTime, `videos/${fileName}`)
+                        mediaPathMap.set(createTime, `videos/${df}/${fileName}`)
                       }
                     }
                   }
@@ -2423,7 +2411,10 @@ class ExportService {
                   // 确定文件扩展名
                   const ext = cdnUrl.includes('.gif') || content.includes('type="2"') ? '.gif' : '.png'
                   const fileName = `${createTime}_${cacheKey}${ext}`
-                  const destPath = path.join(emojiOutDir, fileName)
+                  const df = this.dateFolder(createTime)
+                  const dayDir = path.join(emojiOutDir, df)
+                  if (!fs.existsSync(dayDir)) fs.mkdirSync(dayDir, { recursive: true })
+                  const destPath = path.join(dayDir, fileName)
 
                   if (!fs.existsSync(destPath)) {
                     // 1. 先检查本地缓存（cachePath/Emojis/）
@@ -2442,11 +2433,10 @@ class ExportService {
                     if (sourceFile && fs.existsSync(sourceFile)) {
                       fs.copyFileSync(sourceFile, destPath)
                       emojiCount++
-                      mediaPathMap.set(createTime, `emojis/${fileName}`)
+                      mediaPathMap.set(createTime, `emojis/${df}/${fileName}`)
                     }
                   } else {
-                    // 文件已存在，只记录映射
-                    mediaPathMap.set(createTime, `emojis/${fileName}`)
+                    mediaPathMap.set(createTime, `emojis/${df}/${fileName}`)
                   }
                 }
               } catch (e) {
@@ -2544,11 +2534,14 @@ class ExportService {
             for (let idx = 0; idx < total; idx++) {
               const createTime = voiceCreateTimes[idx]
               const fileName = `${createTime}.wav`
-              const destPath = path.join(voiceOutDir, fileName)
+              const df = this.dateFolder(createTime)
+              const dayDir = path.join(voiceOutDir, df)
+              if (!fs.existsSync(dayDir)) fs.mkdirSync(dayDir, { recursive: true })
+              const destPath = path.join(dayDir, fileName)
 
               // 已存在则跳过
               if (fs.existsSync(destPath)) {
-                mediaPathMap.set(createTime, `voices/${fileName}`)
+                mediaPathMap.set(createTime, `voices/${df}/${fileName}`)
                 continue
               }
 
@@ -2591,7 +2584,7 @@ class ExportService {
                 const wavData = this.createWavBuffer(pcmData, 24000)
                 fs.writeFileSync(destPath, wavData)
                 voiceCount++
-                mediaPathMap.set(createTime, `voices/${fileName}`)
+                mediaPathMap.set(createTime, `voices/${df}/${fileName}`)
               } catch { }
 
               // 进度日志
@@ -2609,68 +2602,23 @@ class ExportService {
       }
     }
 
-    // === 文件导出（独立流程：从微信原始目录复制） ===
-    if (options.exportFiles) {
-      onDetail?.('正在导出文件...')
-      const wechatDir = this.configService.get('dbPath') as string
-      const wxid = this.configService.get('myWxid') as string
-
-      if (wechatDir && wxid) {
-        const accountDir = this.findAccountDir(wechatDir, wxid)
-        const fileBaseDir = path.join(wechatDir, accountDir || wxid, 'msg', 'file')
-
-        for (const { db, tableName } of dbTablePairs) {
-          try {
-            let sql = `SELECT * FROM ${tableName} WHERE local_type = 49`
-            if (options.dateRange) {
-              sql += ` AND create_time >= ${options.dateRange.start} AND create_time <= ${options.dateRange.end}`
-            }
-            sql += ` ORDER BY create_time ASC`
-            const rows = db.prepare(sql).all() as any[]
-
-            for (const row of rows) {
-              try {
-                const createTime = row.create_time || 0
-                const content = this.decodeMessageContent(row.message_content, row.compress_content)
-                const xmlType = this.extractXmlValue(content, 'type')
-                if (xmlType !== '6') continue
-
-                const fileName = this.extractXmlValue(content, 'title')
-                if (!fileName) continue
-
-                // 根据消息时间计算年月目录
-                const msgDate = new Date(createTime * 1000)
-                const dateFolder = `${msgDate.getFullYear()}-${String(msgDate.getMonth() + 1).padStart(2, '0')}`
-                const srcPath = path.join(fileBaseDir, dateFolder, fileName)
-
-                if (fs.existsSync(srcPath)) {
-                  const safeFileName = `${createTime}_${fileName}`
-                  const destPath = path.join(fileOutDir, safeFileName)
-                  if (!fs.existsSync(destPath)) {
-                    fs.copyFileSync(srcPath, destPath)
-                    fileCount++
-                  }
-                  mediaPathMap.set(createTime, `files/${safeFileName}`)
-                }
-              } catch { }
-            }
-          } catch (e) {
-            console.error('[Export] 读取文件消息失败:', e)
-          }
-        }
-      }
-    }
-
     const parts: string[] = []
     if (imageCount > 0) parts.push(`${imageCount} 张图片`)
     if (videoCount > 0) parts.push(`${videoCount} 个视频`)
     if (emojiCount > 0) parts.push(`${emojiCount} 个表情`)
     if (voiceCount > 0) parts.push(`${voiceCount} 条语音`)
-    if (fileCount > 0) parts.push(`${fileCount} 个文件`)
     const summary = parts.length > 0 ? `媒体导出完成: ${parts.join(', ')}` : '无媒体文件'
     onDetail?.(summary)
     console.log(`[Export] ${sessionId} ${summary}`)
     return mediaPathMap
+  }
+
+  private dateFolder(ts: number): string {
+    const d = new Date(ts * 1000)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}${m}${day}`
   }
 
   /**

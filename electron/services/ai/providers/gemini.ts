@@ -10,6 +10,7 @@ export const GeminiMetadata = {
   displayName: 'Gemini',
   description: 'Google 最新的多模态 AI 模型',
   models: [
+    'Gemini 3.1 Pro',
     'Gemini 3 Pro Preview',
     'Gemini 3 Flash Preview',
     'Gemini 2.5 Flash',
@@ -28,6 +29,7 @@ export const GeminiMetadata = {
 }
 
 const MODEL_MAPPING: Record<string, string> = {
+  'Gemini 3.1 Pro': 'gemini-3.1-pro-preview',
   'Gemini 3 Pro Preview': 'gemini-3-pro-preview',
   'Gemini 3 Flash Preview': 'gemini-3-flash-preview',
   'Gemini 2.5 Flash': 'gemini-2.5-flash',

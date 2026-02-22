@@ -727,7 +727,6 @@ export interface ExportOptions {
   dateRange?: { start: number; end: number } | null
   exportMedia?: boolean
   exportAvatars?: boolean
-  exportFiles?: boolean
 }
 
 export interface ContactExportOptions {

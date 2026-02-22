@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Search, Download, FolderOpen, RefreshCw, Check, FileJson, FileText, Table, Loader2, X, FileSpreadsheet, Database, FileCode, CheckCircle, XCircle, ExternalLink, MessageSquare, Users, User, Filter, Image, Video, CircleUserRound, Smile, Mic, Paperclip } from 'lucide-react'
+import { Search, Download, FolderOpen, RefreshCw, Check, FileJson, FileText, Table, Loader2, X, FileSpreadsheet, Database, FileCode, CheckCircle, XCircle, ExternalLink, MessageSquare, Users, User, Filter, Image, Video, CircleUserRound, Smile, Mic } from 'lucide-react'
 import DateRangePicker from '../components/DateRangePicker'
 import { useTitleBarStore } from '../stores/titleBarStore'
 import * as configService from '../services/config'
@@ -33,7 +33,6 @@ interface ExportOptions {
   exportVideos: boolean
   exportEmojis: boolean
   exportVoices: boolean
-  exportFiles: boolean
 }
 
 interface ContactExportOptions {
@@ -87,8 +86,7 @@ function ExportPage() {
     exportImages: false,
     exportVideos: false,
     exportEmojis: false,
-    exportVoices: false,
-    exportFiles: false
+    exportVoices: false
   })
 
   // 通讯录导出状态
@@ -428,8 +426,7 @@ function ExportPage() {
         exportImages: options.exportImages,
         exportVideos: options.exportVideos,
         exportEmojis: options.exportEmojis,
-        exportVoices: options.exportVoices,
-        exportFiles: options.exportFiles
+        exportVoices: options.exportVoices
       }
 
       if (options.format === 'chatlab' || options.format === 'chatlab-jsonl' || options.format === 'json' || options.format === 'excel' || options.format === 'html') {
@@ -706,16 +703,6 @@ function ExportPage() {
                     <Mic size={16} style={{ color: 'var(--text-tertiary)' }} />
                     <span>导出语音</span>
                   </label>
-                  <label className="checkbox-item">
-                    <input
-                      type="checkbox"
-                      checked={options.exportFiles}
-                      onChange={e => setOptions(prev => ({ ...prev, exportFiles: e.target.checked }))}
-                    />
-                    <div className="custom-checkbox"></div>
-                    <Paperclip size={16} style={{ color: 'var(--text-tertiary)' }} />
-                    <span>导出文件</span>
-                  </label>
                 </div>
               </div>
 
@@ -973,7 +960,6 @@ function ExportPage() {
               {options.exportVideos && <span> · 含视频</span>}
               {options.exportEmojis && <span> · 含表情</span>}
               {options.exportVoices && <span> · 含语音</span>}
-              {options.exportFiles && <span> · 含文件</span>}
               {options.exportAvatars && <span> · 含头像</span>}
             </div>
             {exportProgress.total > 0 && (

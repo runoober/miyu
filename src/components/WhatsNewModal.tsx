@@ -8,16 +8,16 @@ interface WhatsNewModalProps {
 
 function WhatsNewModal({ onClose, version }: WhatsNewModalProps) {
     const updates = [
-        // {
-        //     icon: <Package size={20} />,
-        //     title: '媒体导出',
-        //     desc: '导出聊天记录时可同时导出图片、视频、表情包和语音消息。'
-        // },
-        // {
-        //     icon: <Image size={20} />,
-        //     title: '图片自动解密',
-        //     desc: '导出时自动解密未缓存的图片，无需提前在密语聊天窗口浏览。'
-        // },
+        {
+            icon: <Package size={20} />,
+            title: '优化',
+            desc: '修复并优化部分内容。'
+        },
+        {
+            icon: <Image size={20} />,
+            title: '聊天内图片',
+            desc: '支持查看谷歌标准实况图片(iOS端与大疆等实况图片,发送后实况暂不支持)。'
+        }
         // {
         //     icon: <Mic size={20} />,
         //     title: '语音导出',
@@ -28,11 +28,11 @@ function WhatsNewModal({ onClose, version }: WhatsNewModalProps) {
         //     title: '分类导出',
         //     desc: '导出时可按群聊或个人聊天筛选，支持日期范围过滤。'
         // }
-        {
-            icon: <Aperture size={20} />,
-            title: '朋友圈',
-            desc: '新增朋友圈功能！'
-        }
+        // {
+        //     icon: <Aperture size={20} />,
+        //     title: '朋友圈',
+        //     desc: '新增朋友圈功能！'
+        // }
     ]
 
     const handleTelegram = () => {

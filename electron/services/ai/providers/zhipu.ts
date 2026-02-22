@@ -9,6 +9,7 @@ export const ZhipuMetadata = {
   displayName: '智谱AI',
   description: '国产大模型，性能优秀',
   models: [
+    'GLM-5',
     'GLM-4.7 Flash',
     'GLM-4.6v Flash',
     'GLM-4.5 Flash',
@@ -26,6 +27,7 @@ export const ZhipuMetadata = {
 }
 
 const MODEL_MAPPING: Record<string, string> = {
+  'GLM-5': 'glm-5',
   'GLM-4.7 Flash': 'glm-4.7-flash',
   'GLM-4.6v Flash': 'glm-4.6v-flash',
   'GLM-4.5 Flash': 'glm-4.5-flash',
